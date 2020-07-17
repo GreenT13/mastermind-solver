@@ -16,8 +16,8 @@ public class CombinationCalculator {
     private static final Logger log = LogManager.getLogger(CombinationCalculator.class);
 
     private final boolean useElvenarRules;
-    private final Set<Multiset<KeyPeg>> allKeyPegCombinations;
-    private final Set<ColorPegCombination> allColorPegCombinations;
+    final Set<Multiset<KeyPeg>> allKeyPegCombinations;
+    final Set<ColorPegCombination> allColorPegCombinations;
 
     /** Result of {@link #calculateOptimalFirstCombination()} stored for easy reuse. */
     private ColorPegCombination optimalFirstCombination;
@@ -60,7 +60,13 @@ public class CombinationCalculator {
      */
     private ColorPegCombination calculateOptimalSecondCombination(Multiset<KeyPeg> keyPegCombination) {
         // Calculate the optimal combination, just on a smaller set of solutions.
-        Set<ColorPegCombination> filteredSolutions = PegUtil.filteredSolutions(useElvenarRules, allColorPegCombinations, optimalFirstCombination, keyPegCombination);
+        Set<ColorPegCombination> filteredSolutions = PegUtil.determineCombinationsThatSatisfyGuess(useElvenarRules, allColorPegCombinations, optimalFirstCombination, keyPegCombination);
+
+        // In case there are no solutions (if the key pegs are impossible), just return the empty combination.
+        if (filteredSolutions.size() == 0) {
+            return ColorPegCombination.EMPTY;
+        }
+
         return calculateOptimalCombination(filteredSolutions);
     }
 
@@ -74,10 +80,9 @@ public class CombinationCalculator {
 
         //noinspection OptionalGetWithoutIsPresent
         Map.Entry<ColorPegCombination, Integer> optimalGuess = StreamEx.of(solutions)
-                // Increase performance by using parallel.
                 .parallel()
                 // Map each combination to the minimal number of eliminations.
-                .mapToEntry(combination -> calculateMinimalNumberOfEliminations(useElvenarRules, solutions, combination))
+                .mapToEntry(combination -> calculateMinimalNumberOfEliminations(solutions, combination))
                 // Pick the combination with the maximal number of eliminations.
                 .max(Comparator.comparingInt(Map.Entry::getValue))
                 // We know at least one solution is present, so just call get.
@@ -89,15 +94,14 @@ public class CombinationCalculator {
 
     /**
      * Calculates the minimal number of eliminations from the solution set assuming the given combination.
-     * @param useElvenarRules If Elvenar rules should be used
      * @param solutions       The list of all solutions
      * @param combination     The combination
      */
-    private Integer calculateMinimalNumberOfEliminations(boolean useElvenarRules, Set<ColorPegCombination> solutions, ColorPegCombination combination) {
-        //noinspection OptionalGetWithoutIsPresent
+    Integer calculateMinimalNumberOfEliminations(Set<ColorPegCombination> solutions, ColorPegCombination combination) {
         return StreamEx.of(allKeyPegCombinations)
                 .parallel()
-                .mapToInt(keyPegCombination -> PegUtil.filteredSolutions(useElvenarRules, solutions, combination, keyPegCombination).size())
-                .min().getAsInt();
+                // The number of eliminations equals the total number of solutions minus the combinations that are still possible.
+                .mapToInt(keyPegCombination -> solutions.size() - PegUtil.determineCombinationsThatSatisfyGuess(useElvenarRules, solutions, combination, keyPegCombination).size())
+                .min().orElse(solutions.size());
     }
 }
