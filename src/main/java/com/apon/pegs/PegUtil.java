@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -20,9 +19,27 @@ public class PegUtil {
         // Some combinations are duplicate, as order doesn't matter. So we map everything into a set and we are done.
         List<List<KeyPeg>> cartesianProductSource = Collections.nCopies(nrOfLocations, Arrays.asList(KeyPeg.values()));
 
-        return Lists.cartesianProduct(cartesianProductSource).stream()
+        return StreamEx.cartesianProduct(cartesianProductSource)
                 .map(HashMultiset::create)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Calculates all the possible color peg combinations.
+     * @param nrOfColors    The number of colors used
+     * @param nrOfLocations The number of locations used
+     */
+    public static Set<ColorPegCombination> calculateAllColorPegCombinations(int nrOfLocations, int nrOfColors) {
+        // Create a list from 1 to N where N is the number of colors.
+        List<Integer> allColors = IntStream.rangeClosed(1, nrOfColors).boxed().collect(Collectors.toList());
+
+        // Calculate all possible combinations of the possible answers using the cartesian product X^n, where
+        // X is the set of all possible colors and n is the number of locations.
+        List<List<Integer>> cartesianProductSource = Collections.nCopies(nrOfLocations, allColors);
+
+        return StreamEx.cartesianProduct(cartesianProductSource)
+                .map(ColorPegCombination::new)
+                .toSet();
     }
 
     public static Multiset<KeyPeg> determineKeyPegCombination(ColorPegCombination guess, ColorPegCombination solution, boolean useElvenarRules) {
@@ -57,33 +74,15 @@ public class PegUtil {
     }
 
     /**
-     * Calculates all the possible color peg combinations.
-     * @param nrOfColors    The number of colors used
-     * @param nrOfLocations The number of locations used
-     */
-    public static Set<ColorPegCombination> calculateAllColorPegCombinations(int nrOfColors, int nrOfLocations) {
-        // Create a list from 1 to N where N is the number of colors.
-        List<Integer> allColors = IntStream.rangeClosed(1, nrOfColors).boxed().collect(Collectors.toList());
-
-        // Calculate all possible combinations of the possible answers using the cartesian product X^n, where
-        // X is the set of all possible colors and n is the number of locations.
-        List<List<Integer>> cartesianProductSource = Collections.nCopies(nrOfLocations, allColors);
-
-        return StreamEx.of(Lists.cartesianProduct(cartesianProductSource))
-                .map(ColorPegCombination::new)
-                .toSet();
-    }
-
-    /**
      * Returns all the solutions that satisfy the given color peg combination with key pegs.
-     * @param useElvenarRules     Determines the rule set
-     * @param possibleSolutions   All the possible solutions to filter
-     * @param colorPegCombination The color peg combination
-     * @param keyPegCombination   The key peg combination
+     * @param useElvenarRules      Determines the rule set
+     * @param possibleCombinations All the possible combinations to filter
+     * @param colorPegCombination  The color peg combination
+     * @param keyPegCombination    The key peg combination
      */
-    public static Set<ColorPegCombination> filteredSolutions(boolean useElvenarRules, Set<ColorPegCombination> possibleSolutions,
-                                                             ColorPegCombination colorPegCombination, Multiset<KeyPeg> keyPegCombination) {
-        return StreamEx.of(possibleSolutions)
+    public static Set<ColorPegCombination> selectCombinationsThatSatisfyGuess(boolean useElvenarRules, Set<ColorPegCombination> possibleCombinations,
+                                                                              ColorPegCombination colorPegCombination, Multiset<KeyPeg> keyPegCombination) {
+        return StreamEx.of(possibleCombinations)
                 .filter((solution) -> PegUtil.determineKeyPegCombination(colorPegCombination, solution, useElvenarRules).equals(keyPegCombination))
                 .toSet();
     }

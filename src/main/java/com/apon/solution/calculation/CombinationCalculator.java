@@ -60,7 +60,7 @@ public class CombinationCalculator {
      */
     private ColorPegCombination calculateOptimalSecondCombination(Multiset<KeyPeg> keyPegCombination) {
         // Calculate the optimal combination, just on a smaller set of solutions.
-        Set<ColorPegCombination> filteredSolutions = PegUtil.determineCombinationsThatSatisfyGuess(useElvenarRules, allColorPegCombinations, optimalFirstCombination, keyPegCombination);
+        Set<ColorPegCombination> filteredSolutions = PegUtil.selectCombinationsThatSatisfyGuess(useElvenarRules, allColorPegCombinations, optimalFirstCombination, keyPegCombination);
 
         // In case there are no solutions (if the key pegs are impossible), just return the empty combination.
         if (filteredSolutions.size() == 0) {
@@ -101,7 +101,7 @@ public class CombinationCalculator {
         return StreamEx.of(allKeyPegCombinations)
                 .parallel()
                 // The number of eliminations equals the total number of solutions minus the combinations that are still possible.
-                .mapToInt(keyPegCombination -> solutions.size() - PegUtil.determineCombinationsThatSatisfyGuess(useElvenarRules, solutions, combination, keyPegCombination).size())
+                .mapToInt(keyPegCombination -> solutions.size() - PegUtil.selectCombinationsThatSatisfyGuess(useElvenarRules, solutions, combination, keyPegCombination).size())
                 .min().orElse(solutions.size());
     }
 }

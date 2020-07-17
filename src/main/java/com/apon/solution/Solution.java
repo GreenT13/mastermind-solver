@@ -5,9 +5,8 @@ import com.apon.pegs.KeyPeg;
 import com.apon.pegs.PegUtil;
 import com.google.common.collect.Multiset;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * Interface for solution classes of the mastermind game.
@@ -41,22 +40,20 @@ public interface Solution {
 
     /**
      * Determine the final guess based on the key pegs of the first and second combinations.
-     * @param firstGuessKeyPegs  The key pegs of the first guess.
-     * @param secondGuessKeyPegs The key pegs of the second guess.
-     * @return A random possible solution with the chance to win the game.
+     * @param firstKeyPegCombination  The key peg combination of the first color peg combination
+     * @param secondKeyPegCombination The key peg combination of the second color peg combination
+     * @return A random possible solution with the chance to win the game
      */
-    default Guess determineFinalGuess(Multiset<KeyPeg> firstGuessKeyPegs, Multiset<KeyPeg> secondGuessKeyPegs) {
-        ColorPegCombination firstGuessCombination = getFirstGuess().getGuess();
-        ColorPegCombination secondGuessCombination = getSecondGuessMap().get(secondGuessKeyPegs).getGuess();
+    default Guess determineFinalGuess(Multiset<KeyPeg> firstKeyPegCombination, Multiset<KeyPeg> secondKeyPegCombination) {
+        ColorPegCombination firstCombination = getFirstGuess().getGuess();
+        ColorPegCombination secondCombination = getSecondGuessMap().get(secondKeyPegCombination).getGuess();
 
-        List<ColorPegCombination> allSolutions = PegUtil.calculateAllPossibleSolutions(getNrOfColors(), getNrOfLocations());
+        Set<ColorPegCombination> allSolutions = PegUtil.calculateAllColorPegCombinations(getNrOfColors(), getNrOfLocations());
 
         // Filter out all the possible solutions based on the first and second combination.
-        List<ColorPegCombination> possibleSolutions = allSolutions.stream()
-                .filter(PegUtil.selectValidSolutionsBasedOn(firstGuessCombination, firstGuessKeyPegs, useElvenarRules()))
-                .filter(PegUtil.selectValidSolutionsBasedOn(secondGuessCombination, secondGuessKeyPegs, useElvenarRules()))
-                .collect(Collectors.toList());
+        Set<ColorPegCombination> solutionsAfterFirstGuess = PegUtil.selectCombinationsThatSatisfyGuess(useElvenarRules(), allSolutions, firstCombination, firstKeyPegCombination);
+        Set<ColorPegCombination> solutionsAfterSecondGuess = PegUtil.selectCombinationsThatSatisfyGuess(useElvenarRules(), solutionsAfterFirstGuess, secondCombination, secondKeyPegCombination);
 
-        return new Guess(possibleSolutions.get(0), possibleSolutions.size() / (float) allSolutions.size());
+        return new Guess(solutionsAfterSecondGuess.iterator().next(), solutionsAfterSecondGuess.size() / (float) allSolutions.size());
     }
 }
