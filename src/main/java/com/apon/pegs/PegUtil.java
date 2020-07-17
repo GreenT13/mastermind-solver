@@ -3,6 +3,7 @@ package com.apon.pegs;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
+import one.util.streamex.StreamEx;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,7 +56,12 @@ public class PegUtil {
         return keyPegCombination;
     }
 
-    public static List<ColorPegCombination> calculateAllPossibleSolutions(int nrOfColors, int nrOfLocations) {
+    /**
+     * Calculates all the possible color peg combinations.
+     * @param nrOfColors    The number of colors used
+     * @param nrOfLocations The number of locations used
+     */
+    public static Set<ColorPegCombination> calculateAllColorPegCombinations(int nrOfColors, int nrOfLocations) {
         // Create a list from 1 to N where N is the number of colors.
         List<Integer> allColors = IntStream.rangeClosed(1, nrOfColors).boxed().collect(Collectors.toList());
 
@@ -63,14 +69,22 @@ public class PegUtil {
         // X is the set of all possible colors and n is the number of locations.
         List<List<Integer>> cartesianProductSource = Collections.nCopies(nrOfLocations, allColors);
 
-        return Lists.cartesianProduct(cartesianProductSource).stream()
+        return StreamEx.of(Lists.cartesianProduct(cartesianProductSource))
                 .map(ColorPegCombination::new)
-                .collect(Collectors.toList());
+                .toSet();
     }
 
-    public static Predicate<ColorPegCombination> selectValidSolutionsBasedOn(ColorPegCombination colorPegCombination,
-                                                                             Multiset<KeyPeg> keyPegCombination,
-                                                                             boolean useElvenarRules) {
-        return (solution) -> PegUtil.determineKeyPegCombination(colorPegCombination, solution, useElvenarRules).equals(keyPegCombination);
+    /**
+     * Returns all the solutions that satisfy the given color peg combination with key pegs.
+     * @param useElvenarRules     Determines the rule set
+     * @param possibleSolutions   All the possible solutions to filter
+     * @param colorPegCombination The color peg combination
+     * @param keyPegCombination   The key peg combination
+     */
+    public static Set<ColorPegCombination> filteredSolutions(boolean useElvenarRules, Set<ColorPegCombination> possibleSolutions,
+                                                             ColorPegCombination colorPegCombination, Multiset<KeyPeg> keyPegCombination) {
+        return StreamEx.of(possibleSolutions)
+                .filter((solution) -> PegUtil.determineKeyPegCombination(colorPegCombination, solution, useElvenarRules).equals(keyPegCombination))
+                .toSet();
     }
 }
