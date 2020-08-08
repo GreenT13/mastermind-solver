@@ -27,4 +27,15 @@ class CombinationCalculatorTest {
         // The answer may be any of the one optimal solutions. The only common factor is that we know is the minimal number of eliminations.
         assertEquals((Integer) 207, combinationCalculator.calculateMinimalNumberOfEliminations(combinationCalculator.allColorPegCombinations, colorPegCombination));
     }
+
+    @Test
+    void test() {
+        // TODO: think of something smart for this test case.
+
+        // Given
+        CombinationCalculator combinationCalculator = createInstance(false, 2, 4);
+        System.out.println(combinationCalculator.calculateOptimalFirstCombination());
+        System.out.print(combinationCalculator.calculateGuessCombinationMap());
+
+    }
 }
